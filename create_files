@@ -1,0 +1,64 @@
+#!/bin/sh
+
+if [[ $# -ne 5 ]]; then
+   echo "Help: $0 [parts] [chapter num] [append] [folder] [content_file]"
+   exit 1
+fi
+
+parts=$1
+chapters=$2
+appends=$3
+folder=$4
+content=$5
+
+echo "${parts} parts, ${chapters} chapters, ${appends} appendixes in $folder"
+
+# create img folder
+if [[ ! -d $folder/img ]]; then
+   mkdir $folder/img
+fi
+# copy .gitignore
+cp .gitignore $folder
+
+input=$folder/$content
+title=`head -1 $input`
+echo "# $title" > $folder/README.md
+
+tail -n +2 $input > stripped
+while IFS= read -r line
+do
+#   echo "$line"
+  type=`echo ${line} | cut -d " " -f1`
+  seq=`echo ${line} | cut -d " " -f2`
+  description=`echo ${line} | sed -e "s/${type} //" | sed -e "s/${seq} //"`
+  echo "type=$type seq=$seq desc=$description"
+
+  if [ $type = 'About' ] || [ $type = 'Introduction' ] || [ $type = 'Preface' ]; then
+      echo "## [$line](0.md)" >> ${folder}/README.md
+      echo "# $line" >> "$folder/0.md"
+      cat template >> "$folder/0.md"
+  elif [ $type = 'PART' ] || [ $type = 'Part' ]; then
+      echo "## [$type $seq. $description](p$seq.md)" >> ${folder}/README.md
+      echo "# $type $seq. $description" >> "$folder/p$seq.md"
+      cat template >> "$folder/p$seq.md"
+  elif [ $type = 'Chapter' ]; then
+    if [[ $parts -eq 0 ]]; then
+      echo "in parts = 0"
+      echo "## [$type $seq. $description]($seq.md)" >> ${folder}/README.md
+    else
+      echo "### [$type $seq. $description]($seq.md)" >> ${folder}/README.md
+    fi
+      echo "# $type $seq. $description" >> "$folder/$seq.md"
+      cat template >> "$folder/$seq.md"
+  elif [[ $type = 'appendix' || $type = 'Appendix' ]]; then
+      echo "## [$type $seq. $description](a$seq.md)" >> ${folder}/README.md
+      echo "# $type $seq. $description" >> "$folder/a$seq.md"
+      cat template >> "$folder/a$seq.md"
+  else
+      echo ''
+  fi
+
+done < stripped
+
+head -n 34 template >> $folder/README.md
+rm stripped

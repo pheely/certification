@@ -1,0 +1,5 @@
+project-id: ibcwe-event-layer-f3ccf6d9
+secret-id: password
+location: us-east1
+keyring-id: my-keyring
+key-id: my-key
